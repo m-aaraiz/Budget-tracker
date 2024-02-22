@@ -1,14 +1,53 @@
 import "./App.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function App() {
 	const [name, setName] = useState("");
 	const [datetime, setDatetime] = useState("");
 	const [description, setDescription] = useState("");
+	const [transactions, setTransactions] = useState([""]);
 
-	function addNewTransaction() {
-		
+	useEffect(() => {
+		getTransactions().then(setTransactions);
+	}, []);
+
+	async function getTransactions() {
+		const url = process.env.REACT_APP_API_URL + "/transactions";
+		const response = await fetch(url);
+		return await response.json();
 	}
+	function addNewTransaction(ev) {
+		ev.preventDefault();
+		const url = process.env.REACT_APP_API_URL + "/transaction";
+		const price = name.split(" ")[0];
+		fetch(url, {
+			method: "POST",
+			headers: { "Content-type": "application/json" },
+			body: JSON.stringify({
+				price,
+				name: name.substring(price.length + 1),
+				description,
+				datetime,
+			}),
+		})
+			.then((response) => {
+				if (!response.ok) {
+					throw new Error("Network response was not ok");
+				}
+				return response.json();
+			})
+			.then((json) => {
+				console.log("result", json);
+			})
+			.catch((error) => {
+				console.error(
+					"There was a problem with the fetch operation:",
+					error
+				);
+			});
+	}
+	// ... rest of the code remains the same
+	let balance = 0;
 
 	return (
 		<main>
@@ -40,42 +79,36 @@ function App() {
 				<button>Add transaction</button>
 			</form>
 			<div className="transactions">
-				<div className="transaction">
-					<div className="left">
-						<div className="name">New TV</div>
-						<div className="description">
-							it was time for a New TV
-						</div>
-					</div>
-					<div className="right">
-						<div className="price red">-$500</div>
-						<div className="datetime">2024-02-20 2:45</div>
-					</div>
-				</div>
-				<div className="transaction">
-					<div className="left">
-						<div className="name">Paycheck</div>
-						<div className="description">
-							it was time for a New TV
-						</div>
-					</div>
-					<div className="right">
-						<div className="price green">+$500</div>
-						<div className="datetime">2024-02-20 2:45</div>
-					</div>
-				</div>
-				<div className="transaction">
-					<div className="left">
-						<div className="name">Groceries</div>
-						<div className="description">
-							it was time for a New TV
-						</div>
-					</div>
-					<div className="right">
-						<div className="price red">-$100</div>
-						<div className="datetime">2024-02-20 2:45</div>
-					</div>
-				</div>
+				{transactions.length > 0 &&
+					transactions.map((transaction) => {
+						return (
+							<div className="transaction">
+								<div className="left">
+									<div className="name">
+										{transaction.name}
+									</div>
+									<div className="description">
+										{transaction.description}
+									</div>
+								</div>
+								<div className="right">
+									<div
+										className={
+											"price" +
+											(transaction.price < 0
+												? " red"
+												: " green")
+										}
+									>
+										{transaction.price}
+									</div>
+									<div className="datetime">
+										2024-02-20 2:45
+									</div>
+								</div>
+							</div>
+						);
+					})}
 			</div>
 		</main>
 	);
